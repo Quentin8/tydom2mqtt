@@ -1,5 +1,9 @@
 # Changelog
 
+# 3.4.3.1
+- :star: Add battDefect to Tysense
+
+
 # 3.4.3
 - :star: Add device polling 
 - :star: Add HVAC cool mode
