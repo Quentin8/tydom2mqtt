@@ -190,6 +190,8 @@ deviceSwitchDetailsKeywords = ['thermicDefect']
 deviceMotionKeywords = ['motionDetect']
 deviceMotionDetailsKeywords = ['motionDetect']
 
+# Device classes defines what data is measured (and tells home assistant how to display data)
+# Ref: https://www.home-assistant.io/integrations/sensor/#device-class 
 device_conso_classes = {
     'energyInstantTotElec': 'current',
     'energyInstantTotElec_Min': 'current',
@@ -215,7 +217,9 @@ device_conso_classes = {
     'energyIndexHeatWatt': 'energy',
     'energyIndexECSWatt': 'energy',
     'energyIndexHeatGas': 'energy',
-    'outTemperature': 'temperature'}
+    'outTemperature': 'temperature',
+    'battDefect': 'battery'
+    }
 
 device_conso_unit_of_measurement = {
     'energyInstantTotElec': 'A',
@@ -243,7 +247,7 @@ device_conso_unit_of_measurement = {
     'energyIndexECSWatt': 'Wh',
     'energyIndexHeatGas': 'Wh',
     'outTemperature': 'C'}
-device_conso_keywords = device_conso_classes.keys()
+device_conso_keywords = list(device_conso_classes.keys())
 
 deviceSmokeKeywords = ['techSmokeDefect']
 
@@ -503,13 +507,14 @@ class MessageHandler:
                     name_of_id,
                     type_of_id)
 
-                for elem in endpoint["data"]:
+                for elem in endpoint["data"]: # parses endpoints and create an entity by endpoints **data**
                     element_name = elem["name"]
                     element_value = elem["value"]
                     element_validity = elem["validity"]
                     print_id = name_of_id if len(
                         name_of_id) != 0 else device_id
 
+                    # Determine device type
                     if type_of_id == 'light':
                         if element_name in deviceLightKeywords and element_validity == 'upToDate':
                             attr_light['device_id'] = device_id

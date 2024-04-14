@@ -11,6 +11,8 @@ binary_sensor_config_topic = "homeassistant/binary_sensor/tydom/{id}/config"
 binary_sensor_json_attributes_topic = "binary_sensor/tydom/{id}/state"
 
 
+# References: https://www.home-assistant.io/integrations/sensor.mqtt/
+
 class Sensor:
 
     def __init__(self, elem_name, tydom_attributes_payload, mqtt=None):
@@ -27,7 +29,7 @@ class Sensor:
         # extracted from json, but it will make sensor not in payload to be
         # considered offline....
         self.parent_device_id = str(tydom_attributes_payload['id'])
-        self.id = elem_name + '_tydom_' + str(tydom_attributes_payload['id'])
+        self.id = elem_name + '_tydom_' + str(tydom_attributes_payload['id']) # EndpointDataName_tydom_DeviceIdEndpointId ex: battDefect_tydom_xxxxxx or outtemperature_tydom_xxxx 
         self.name = elem_name
         if 'device_class' in tydom_attributes_payload.keys():
             self.device_class = tydom_attributes_payload['device_class']
@@ -41,6 +43,7 @@ class Sensor:
         self.mqtt = mqtt
         self.binary = False
 
+        # Check if sensor is binary type 
         if 'unit_of_measurement' not in tydom_attributes_payload.keys() and (
             self.elem_value in [
                 "0",
@@ -62,7 +65,7 @@ class Sensor:
             self.json_attributes_topic = binary_sensor_json_attributes_topic.format(
                 id=self.id)
             self.config_topic = binary_sensor_config_topic.format(id=self.id)
-        else:
+        else: # Not a binary sensor
             self.json_attributes_topic = sensor_json_attributes_topic.format(
                 id=self.id)
             self.config_topic = sensor_config_topic.format(id=self.id)
@@ -128,7 +131,7 @@ class Sensor:
         self.config['device'] = self.device
         self.config['state_topic'] = self.json_attributes_topic
 
-        if self.mqtt is not None:
+        if self.mqtt is not None: # Configure entities
             self.mqtt.mqtt_client.publish(
                 self.config_topic.lower(), json.dumps(
                     self.config), qos=0, retain=True)  # sensor Config
