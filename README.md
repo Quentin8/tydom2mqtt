@@ -1,8 +1,10 @@
 # tydom2MQTT
 
-![Docker pulls](https://img.shields.io/docker/pulls/fmartinou/tydom2mqtt)
-![License](https://img.shields.io/github/license/fmartinou/tydom2mqtt)
-![Travis](https://img.shields.io/travis/fmartinou/tydom2mqtt/master)
+
+![GitHub Tag](https://img.shields.io/github/v/tag/quentin8/tydom2mqtt?style=for-the-badge&color=green)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/quentin8/tydom2mqtt/docker-image.yml)
+![Docker Image Version (arm)](https://img.shields.io/docker/v/quentin8/tydom2mqtt?arch=arm)
+![License](https://img.shields.io/github/license/quentin8/tydom2mqtt)
 
 ![](docs/tydom2mqtt_logo_250.png)
 
