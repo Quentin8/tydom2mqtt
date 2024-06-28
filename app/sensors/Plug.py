@@ -3,92 +3,104 @@ import logging
 from .Sensor import Sensor
 
 logger = logging.getLogger(__name__)
+
 switch_config_topic = "homeassistant/switch/tydom/{id}/config"
-switch_state_topic = "switch/tydom/{id}/state"
-switch_attributes_topic = "switch/tydom/{id}/attributes"
-switch_command_topic = "switch/tydom/{id}/set_levelCmdGate"
-switch_level_topic = "switch/tydom/{id}/current_level"
-switch_set_level_topic = "switch/tydom/{id}/set_levelGate"
 
 
-class Switch:
-    def __init__(self, tydom_attributes, set_level=None, mqtt=None):
-        self.level_topic = None
-        self.config_topic = None
+switch_state_topic = "switch/tydom/{id}/state" # Topic to read the current state
+
+# The MQTT topic subscribed to receive a JSON dictionary payload and then set as sensor attributes
+switch_attributes_topic = "switch/tydom/{id}/attributes" 
+
+# WHere to publish commands
+switch_command_topic = "switch/tydom/{id}/set" # Topic to publish commands
+
+typeFromClassName = {
+    "Plug": "outlet"
+}
+
+class Plug:
+    def __init__(self, tydom_attributes, mqtt=None):
         self.config = None
         self.device = None
+        
         self.attributes = tydom_attributes
         self.device_id = self.attributes['device_id']
         self.endpoint_id = self.attributes['endpoint_id']
         self.id = self.attributes['id']
         self.name = self.attributes['switch_name']
-
-        try:
-            self.current_level = self.attributes['level']
-        except Exception as e:
-            logger.error(e)
-            self.current_level = None
-        self.set_level = set_level
+        self.state = tydom_attributes['state']
+        
+        self.config_topic =  switch_config_topic.format(id=self.id)
+        self.command_topic = switch_command_topic.format(id=self.id)
+        self.json_attributes_topic = switch_attributes_topic.format(id=self.id)
+        self.state_topic = switch_state_topic.format(id=self.id)
+        
         self.mqtt = mqtt
 
     async def setup(self):
         self.device = {
             'manufacturer': 'Delta Dore',
-            'model': 'Porte',
+            'model': f'{self.__class__.__name__}',
             'name': self.name,
             'identifiers': self.id}
-        self.config_topic = switch_config_topic.format(id=self.id)
+        
+        
         self.config = {
             'name': None,  # set an MQTT entity's name to None to mark it as the main feature of a device
             'unique_id': self.id,
-            'command_topic': switch_command_topic.format(
-                id=self.id),
-            'state_topic': switch_state_topic.format(
-                id=self.id),
-            'json_attributes_topic': switch_attributes_topic.format(
-                id=self.id),
-            'payload_on': "TOGGLE",
-            'payload_off': "TOGGLE",
+            'command_topic': self.command_topic,
+            'state_topic': self.state_topic,
+            'json_attributes_topic': self.json_attributes_topic,
+            'payload_on': "ON",
+            'payload_off': "OFF",
             'retain': 'false',
+            'device_class': typeFromClassName.get(f"{self.__class__.__name__}"),
             'device': self.device}
 
+        # Define the device
         if self.mqtt is not None:
             self.mqtt.mqtt_client.publish(
                 self.config_topic, json.dumps(
                     self.config), qos=0, retain=True)
-
+            
     async def update(self):
         await self.setup()
 
-        try:
-            await self.update_sensors()
-        except Exception as e:
-            logger.error("Switch sensors Error :")
-            logger.error(e)
+        # See if it's possible to keep it here or in MessageHandler ?
+        # try:
+        #     await self.update_sensors()
+        # except Exception as e:
+        #     logger.error("Switch sensors Error :")
+        #     logger.error(e)
 
-        self.level_topic = switch_state_topic.format(
-            id=self.id, current_level=self.current_level)
 
         if self.mqtt is not None:
+            # Sends current switch state
             self.mqtt.mqtt_client.publish(
-                self.level_topic,
-                self.current_level,
+                self.state_topic,
+                self.state,
                 qos=0,
                 retain=True)
+            
+            # Sets sensors attributes with self.attributes dict
             self.mqtt.mqtt_client.publish(
                 self.config['json_attributes_topic'],
                 self.attributes,
                 qos=0,
                 retain=True)
+            
         logger.info(
             "Switch created / updated : %s %s %s",
             self.name,
             self.id,
-            self.current_level)
+            self.state)
 
     async def update_sensors(self):
+        """Update plug sensors associated data's (ex: energyInstantTotElecP).
+        """        
         for i, j in self.attributes.items():
-            if not i == 'device_type' and not i == 'id' and not i == 'device_id' and not i == 'endpoint_id':
+            if i not in ['device_type','device_id','endpoint_id','id','state']:
                 new_sensor = Sensor(
                     elem_name=i,
                     tydom_attributes_payload=self.attributes,
@@ -96,16 +108,10 @@ class Switch:
                 await new_sensor.update()
 
     @staticmethod
-    async def put_level_gate(tydom_client, device_id, switch_id, level):
-        logger.info("%s %s %s", switch_id, 'level', level)
-        if not (level == ''):
-            await tydom_client.put_devices_data(device_id, switch_id, 'level', level)
-            
-    @staticmethod
-    async def put_switch_state(tydom_client, device_id, switch_id, state):
-        logger.info("%s %s %s", switch_id, 'level', state)
+    async def set_state(tydom_client, device_id, switch_id, state):
+        logger.info("%s %s %s", switch_id, 'state', state)
         if not (state == ''):
-            await tydom_client.put_devices_data(device_id, switch_id, 'level', state)
+            await tydom_client.put_devices_data(device_id, switch_id, 'plugCmd', state)
 
     @staticmethod
     async def put_level_cmd_gate(tydom_client, device_id, switch_id, level_cmd):
