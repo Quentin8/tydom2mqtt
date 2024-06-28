@@ -269,6 +269,7 @@ class MessageHandler:
         bytes_str = self.incoming_bytes
         incoming = None
         first = str(bytes_str[:40])
+
         try:
             if "Uri-Origin: /refresh/all" in first in first:
                 pass
@@ -830,9 +831,13 @@ class MessageHandler:
                                 elif elem["name"] == "energyInstant":
                                     device_class_of_id = 'current'
                                     state_class_of_id = 'measurement'
-                                    unit_of_measurement_of_id = 'VA'
+                                    unit_of_measurement_of_id = 'A'
                                     element_name = elem["parameters"]["unit"]
                                     element_index = 'measure'
+
+                                    element_value = elem["values"][element_index]
+                                    if element_value is not None and type(element_value) == int:
+                                        element_value = element_value / 100
 
                                     attr_conso = {
                                         'device_id': device_id,
@@ -843,7 +848,7 @@ class MessageHandler:
                                         'device_class': device_class_of_id,
                                         'state_class': state_class_of_id,
                                         'unit_of_measurement': unit_of_measurement_of_id,
-                                        element_name: elem["values"][element_index]}
+                                        element_name: element_value}
 
                                     new_conso = Sensor(
                                         elem_name=element_name,

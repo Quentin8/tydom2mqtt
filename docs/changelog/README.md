@@ -1,8 +1,16 @@
 # Changelog
 
+# 3.5.2
+- :fire: Fix HVAC actions on cooling mode
+
+# 3.5.1
+- :fire: Fix configuration not overrided when using HASS.io
+
+# 3.5.0
+- :star: Add HVAC switch mode
+
 # 3.4.3.1
 - :star: Add battDefect to Tysense
-
 
 # 3.4.3
 - :star: Add device polling 
