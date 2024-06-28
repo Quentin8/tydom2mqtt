@@ -56,9 +56,10 @@ class Plug:
             'payload_off': "OFF",
             'retain': 'false',
             'device_class': typeFromClassName.get(f"{self.__class__.__name__}"),
-            'device': self.device}
+            'device': self.device
+        }
 
-        # Define the device
+        # Create the device
         if self.mqtt is not None:
             self.mqtt.mqtt_client.publish(
                 self.config_topic, json.dumps(
@@ -96,25 +97,9 @@ class Plug:
             self.id,
             self.state)
 
-    async def update_sensors(self):
-        """Update plug sensors associated data's (ex: energyInstantTotElecP).
-        """        
-        for i, j in self.attributes.items():
-            if i not in ['device_type','device_id','endpoint_id','id','state']:
-                new_sensor = Sensor(
-                    elem_name=i,
-                    tydom_attributes_payload=self.attributes,
-                    mqtt=self.mqtt)
-                await new_sensor.update()
 
     @staticmethod
     async def set_state(tydom_client, device_id, switch_id, state):
         logger.info("%s %s %s", switch_id, 'state', state)
         if not (state == ''):
             await tydom_client.put_devices_data(device_id, switch_id, 'plugCmd', state)
-
-    @staticmethod
-    async def put_level_cmd_gate(tydom_client, device_id, switch_id, level_cmd):
-        logger.info("%s %s %s", switch_id, 'levelCmd', level_cmd)
-        if not (level_cmd == ''):
-            await tydom_client.put_devices_data(device_id, switch_id, 'levelCmd', level_cmd)
