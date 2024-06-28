@@ -10,6 +10,7 @@ from sensors.Cover import Cover
 from sensors.Light import Light
 from sensors.Sensor import Sensor
 from sensors.Switch import Switch
+from sensors.Plug import Plug
 from sensors.ShHvac import ShHvac
 
 logger = logging.getLogger(__name__)
@@ -184,7 +185,11 @@ deviceShHvacKeywords = [
     "anticipCoeff"
 ]
 
-deviceSwitchKeywords = ['thermicDefect']
+deviceSwitchKeywords = [
+    'thermicDefect',
+    'plugCmd'
+
+]
 deviceSwitchDetailsKeywords = ['thermicDefect']
 
 deviceMotionKeywords = ['motionDetect']
@@ -218,7 +223,7 @@ device_conso_classes = {
     'energyIndexECSWatt': 'energy',
     'energyIndexHeatGas': 'energy',
     'outTemperature': 'temperature',
-    'battDefect': 'battery'
+    'battDefect': 'battery',
     }
 
 device_conso_unit_of_measurement = {
@@ -413,7 +418,12 @@ class MessageHandler:
                 device_name[device_unique_id] = i["name"]
                 device_type[device_unique_id] = 'smoke'
                 device_endpoint[device_unique_id] = i["id_endpoint"]
-
+            
+            if i["last_usage"] == "plug":
+                device_name[device_unique_id] = i["name"]
+                device_type[device_unique_id] = 'smart_plug'
+                device_endpoint[device_unique_id] = i["id_endpoint"]
+                
             if i["last_usage"] == '':
                 device_name[device_unique_id] = i["name"]
                 device_type[device_unique_id] = 'unknown'
@@ -621,6 +631,48 @@ class MessageHandler:
                                 mqtt=self.mqtt_client)
                             await new_conso.update()
 
+                    if type_of_id == 'smart_plug': # Delta Dore Zigbee Plug
+                        if element_name in device_conso_keywords and element_validity == "upToDate":
+                            attr_conso = {
+                                'device_id': device_id,
+                                'endpoint_id': endpoint_id,
+                                'id': str(device_id) + '_' + str(endpoint_id),
+                                'name': print_id,
+                                'device_type': 'sensor',
+                                element_name: element_value}
+
+                            if element_name in device_conso_classes:
+                                attr_conso['device_class'] = device_conso_classes[element_name]
+
+                            if element_name in device_conso_unit_of_measurement:
+                                attr_conso['unit_of_measurement'] = device_conso_unit_of_measurement[element_name]
+                            # Creates consumption sensors
+                            new_conso = Sensor(
+                                elem_name=element_name,
+                                tydom_attributes_payload=attr_conso,
+                                mqtt=self.mqtt_client)
+                            
+                            await new_conso.update()
+                            
+                        elif element_name in deviceSwitchKeywords and element_validity == "upToDate":
+                            # Creates switch button
+                            attr_switch = {
+                                'device_id': device_id,
+                                'endpoint_id': endpoint_id,
+                                'id': str(device_id) + '_' + str(endpoint_id),
+                                'name': print_id,
+                                'device_type': 'switch',
+                                'switch_name': print_id,
+                                'state': element_value
+                            }
+                            
+                            new_switch = Plug(
+                                tydom_attributes=attr_switch,
+                                mqtt=self.mqtt_client)
+                            
+                            await new_switch.update()
+                            
+                            
                     if type_of_id == 'sh_hvac':
                         if element_name in deviceShHvacKeywords and element_validity == 'upToDate':
                             attr_sh_hvac['device_id'] = device_id
@@ -679,12 +731,15 @@ class MessageHandler:
                             #    attr_light['device_type'] = 'light'
                             # else:
                             #    attr_light['device_type'] = 'switch'
+                            
 
             except Exception as e:
                 logger.error('msg_data error in parsing !')
                 logger.error(e)
                 logger.exception(e)
 
+            # Creates all device associated entities
+            
             if 'device_type' in attr_cover and attr_cover['device_type'] == 'cover':
                 new_cover = Cover(
                     tydom_attributes=attr_cover,

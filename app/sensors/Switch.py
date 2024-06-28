@@ -100,6 +100,12 @@ class Switch:
         logger.info("%s %s %s", switch_id, 'level', level)
         if not (level == ''):
             await tydom_client.put_devices_data(device_id, switch_id, 'level', level)
+            
+    @staticmethod
+    async def put_switch_state(tydom_client, device_id, switch_id, state):
+        logger.info("%s %s %s", switch_id, 'level', state)
+        if not (state == ''):
+            await tydom_client.put_devices_data(device_id, switch_id, 'level', state)
 
     @staticmethod
     async def put_level_cmd_gate(tydom_client, device_id, switch_id, level_cmd):

@@ -12,6 +12,7 @@ from sensors.Boiler import Boiler
 from sensors.Cover import Cover
 from sensors.Light import Light
 from sensors.Switch import Switch
+from sensors.Plug import Plug
 from sensors.ShHvac import ShHvac
 
 logger = logging.getLogger(__name__)
@@ -75,6 +76,7 @@ class MqttClient:
             logger.info("Mqtt connection error (%s)", e)
 
     async def on_message(self, client, topic, payload, qos, properties):
+        
         if 'update' in str(topic):
             value = payload.decode()
             logger.info(
@@ -228,7 +230,8 @@ class MqttClient:
             await Boiler.put_thermic_level(tydom_client=self.tydom, device_id=device_id, boiler_id=endpoint_id,
                                            set_thermic_level=str(value))
 
-        elif ('set_switch_state' in str(topic)) and not ('homeassistant' in str(topic)):
+        # Apply the value to the switch
+        elif str(topic).startswith("switch/") and str(topic).endswith("/set") and not ('homeassistant' in str(topic)):
             value = payload.decode()
             logger.info(
                 'set_switch_state message received (topic=%s, message=%s)',
@@ -238,9 +241,7 @@ class MqttClient:
             device_id = (get_id.split("_"))[0]
             endpoint_id = (get_id.split("_"))[1]
 
-            # This seems broken, but I'm not entirely clear what it is meant to
-            # do?
-            await Switch.put_switch_state(tydom_client=self.tydom, device_id=device_id, switch_id=endpoint_id, state=value)
+            await Plug.set_state(tydom_client=self.tydom, device_id=device_id, switch_id=endpoint_id, state=value)
 
         elif 'set_levelCmdGate' in str(topic):
             value = payload.decode()
