@@ -107,4 +107,31 @@ jobs:
         run: |
           docker buildx imagetools inspect ${{ env.REGISTRY_IMAGE }}:${{ steps.meta.outputs.version }}
 
-
+ deploy_update:
+    runs-on: ubuntu-latest
+    needs:
+      - merge
+    steps:
+      - 
+        name: Checkout
+        uses: actions/checkout@v4.2.1
+        with:
+          ref: master
+          repository: hassio-addons
+          token: ${{ secrets.HASSIO_TOKEN }}
+          sparse-checkout: |
+            tydom2mqtt/config.yml
+          sparse-checkout-cone-mode: false
+      - 
+        name: Update image version
+        uses: mikefarah/yq@master
+        with:
+          cmd: yq -i '.version = "${{ github.ref }}"' tydom2mqtt/config.yml
+      - 
+        name: commit and push
+        run: |
+          git config --global user.email "automations@quentin8.fr"
+          git config --global user.name "CD"
+          git add tydom2mqtt/config.yml
+          git commit -m 'Updated image version to ${{ github.ref }}'
+          git push
