@@ -126,12 +126,12 @@ jobs:
         name: Update image version
         uses: mikefarah/yq@master
         with:
-          cmd: yq -i '.version = "${{ github.ref }}"' tydom2mqtt/config.yml
+          cmd: yq -i '.version = "${{ github.ref_name }}"' tydom2mqtt/config.yml
       - 
         name: commit and push
         run: |
           git config --global user.email "automations@quentin8.fr"
           git config --global user.name "CD"
           git add tydom2mqtt/config.yml
-          git commit -m 'Updated image version to ${{ github.ref }}'
+          git commit -m 'Updated image version to ${{ github.ref_name }}'
           git push
